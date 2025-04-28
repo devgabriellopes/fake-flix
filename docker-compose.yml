@@ -1,0 +1,15 @@
+version: '3.8'
+
+name: 'fake-flix'
+
+services:
+  db:
+    image: 'postgres:15-alpine'
+    container_name: 'fake-flix-db'
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - '5432:5432'
+    volumes:
+      - '.data:/var/lib/postgresql/data'

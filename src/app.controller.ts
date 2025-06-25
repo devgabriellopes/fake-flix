@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Body,
   Get,
   HttpCode,
   HttpStatus,
@@ -12,10 +13,16 @@ import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { randomUUID } from 'crypto';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { PrismaService } from './prisma.service';
+import { AppService } from './app.service';
 
 export class AppController {
+  constructor(
+    private readonly appService: AppService,
+    private readonly prismaService: PrismaService,
+  ) {}
   @Get()
-  async getHello(): Promise<string> {
+  getHello(): string {
     return 'Hello World!';
   }
 
@@ -65,10 +72,31 @@ export class AppController {
   )
   async uploadVideo(
     @Req() _req: Request,
+    @Body()
+    contentData: { title: string; description: string },
     @UploadedFiles()
     files: { video: Express.Multer.File[]; thumbnail: Express.Multer.File[] },
   ): Promise<{ message: string }> {
-    console.log(files);
+    const videoFile = files?.video[0];
+    const thumbnailFile = files?.thumbnail[0];
+
+    if (!videoFile || !thumbnailFile) {
+      throw new BadRequestException(
+        'Both video and thumbnail files are required',
+      );
+    }
+
+    await this.prismaService.video.create({
+      data: {
+        title: contentData.title,
+        description: contentData.description,
+        url: videoFile.path,
+        thumbnailUrl: thumbnailFile.path,
+        sizeInKb: Math.round(videoFile.size / 1024),
+        duration: 0,
+      },
+    });
+
     return {
       message: 'Video uploaded successfully',
     };
